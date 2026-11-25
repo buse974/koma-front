@@ -19,8 +19,8 @@ export default function Archive() {
         <p className="muted">Aucun Koma publié pour l’instant.</p>
       ) : (
         <ul className="archive">
-          {s.data.map((p) => (
-            <li key={p.id}>
+          {s.data.map((p, i) => (
+            <li key={p.id} style={{ animationDelay: `${Math.min(i, 20) * 35}ms` }}>
               <Link to={`/p/${p.number}`} className={`tile tile-${p.status}`}>
                 <span className="tile-num">#{p.number}</span>
                 <span className="tile-date">{formatDate(p.date)}</span>

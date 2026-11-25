@@ -1,0 +1,143 @@
+/* Fond animé de <main> (MangaBackdrop). Tout est derrière le contenu et ne capte aucun clic. */
+
+@font-face {
+  font-family: 'Dela Gothic One Koma';
+  /* sous-ensemble : キラッワクドコマ uniquement (OFL, voir assets/fonts/DelaGothicOne-OFL.txt) */
+  src: url('../assets/fonts/dela-koma.woff2') format('woff2');
+  font-display: swap;
+}
+
+#root { overflow-x: clip; }
+.stage { position: relative; isolation: isolate; }
+
+.backdrop {
+  position: absolute; z-index: -1; pointer-events: none; overflow: hidden;
+  top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw;
+  contain: strict;
+}
+.backdrop > * { position: absolute; }
+
+/* trame sur les bords */
+.bd-tone {
+  inset: 0;
+  background-image: radial-gradient(rgba(20, 17, 15, .22) 1.3px, transparent 1.7px);
+  background-size: 9px 9px;
+  -webkit-mask: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, #000 100%);
+  mask: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, #000 100%);
+  opacity: .7;
+}
+
+/* vagues seigaiha en bas */
+.bd-waves {
+  left: 0; right: 0; bottom: 0; height: 150px; opacity: .13;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24'%3E%3Cg fill='%23f6f0e1' stroke='%2314110f' stroke-width='1.6'%3E%3Cg id='a'%3E%3Ccircle cx='24' cy='12' r='23'/%3E%3Ccircle cx='24' cy='12' r='17'/%3E%3Ccircle cx='24' cy='12' r='11'/%3E%3Ccircle cx='24' cy='12' r='5'/%3E%3C/g%3E%3Cuse href='%23a' x='-24' y='12'/%3E%3Cuse href='%23a' x='24' y='12'/%3E%3C/g%3E%3C/svg%3E") repeat-x bottom left / 48px 24px;
+  background-repeat: repeat;
+  -webkit-mask: linear-gradient(to top, #000 10%, transparent);
+  mask: linear-gradient(to top, #000 10%, transparent);
+  animation: bd-waves 18s linear infinite;
+}
+@keyframes bd-waves { to { background-position: 48px 0; } }
+
+/* nuages encrés qui dérivent */
+.bd-cloud {
+  left: 0; width: 100%; height: 0; opacity: .14;
+  animation: bd-drift var(--d) linear var(--w) infinite;
+}
+.bd-cloud svg { position: absolute; left: 0; width: calc(130px * var(--s)); transform: translateX(-100%); }
+@keyframes bd-drift { from { transform: translateX(0); } to { transform: translateX(calc(100% + 130px)); } }
+
+/* étincelles */
+.bd-spark {
+  width: 22px; height: 22px; background: var(--ink); opacity: 0;
+  clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+  transform: scale(var(--s));
+  animation: bd-twinkle 4.2s ease-in-out var(--w) infinite;
+}
+.bd-spark:nth-child(3n) { background: var(--red); }
+@keyframes bd-twinkle {
+  0%, 60%, 100% { opacity: 0; transform: scale(calc(var(--s) * .3)) rotate(0); }
+  75% { opacity: .35; transform: scale(var(--s)) rotate(45deg); }
+}
+
+/* onomatopées en katakana */
+.bd-sfx {
+  font-family: 'Dela Gothic One Koma', var(--display); font-size: clamp(2.2rem, 7vw, 4.4rem); line-height: 1;
+  color: var(--paper); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  opacity: .1; transform: rotate(var(--r));
+  animation: bd-pulse 7s ease-in-out var(--w) infinite;
+}
+@keyframes bd-pulse {
+  0%, 100% { opacity: .07; transform: rotate(var(--r)) scale(1); }
+  50% { opacity: .15; transform: rotate(var(--r)) scale(1.06); }
+}
+
+/* pétales de sakura */
+.bd-petal {
+  top: 0; left: var(--x); height: 100%; width: 0;
+  animation: bd-fall var(--d) linear var(--w) infinite;
+}
+.bd-petal span {
+  position: absolute; top: -20px; width: calc(17px * var(--s)); height: calc(13px * var(--s));
+  background: linear-gradient(135deg, #f7c6d3, #ec98ad);
+  border-radius: 100% 0 100% 0 / 100% 0 100% 0;
+  opacity: .75;
+  animation: bd-sway 4.5s ease-in-out var(--w) infinite alternate;
+}
+@keyframes bd-fall { from { transform: translateY(-5%); } to { transform: translateY(105%); } }
+@keyframes bd-sway {
+  from { transform: translateX(-22px) rotate(-30deg) rotateY(0); }
+  to { transform: translateX(22px) rotate(40deg) rotateY(160deg); }
+}
+
+/* coups de sabre : entaille d'encre effilée + reflet de lame */
+.bd-slash {
+  height: 14px; transform: rotate(var(--a)); transform-origin: left center;
+  animation: bd-slash-cycle var(--d) linear var(--w) infinite; opacity: 0;
+}
+.bd-slash::before, .bd-slash::after { content: ''; position: absolute; inset: 0; }
+.bd-slash::before {
+  background: var(--ink);
+  clip-path: polygon(0 50%, 12% 30%, 70% 0, 100% 50%, 70% 100%, 12% 70%);
+  transform-origin: left center;
+  animation: bd-slash-cut var(--d) cubic-bezier(.1, .9, .2, 1) var(--w) infinite;
+}
+.bd-slash::after {
+  top: 45%; bottom: 45%; background: linear-gradient(90deg, transparent, var(--paper) 30%, #fff 70%, transparent);
+  transform-origin: left center;
+  animation: bd-slash-cut var(--d) cubic-bezier(.1, .9, .2, 1) var(--w) infinite;
+}
+@keyframes bd-slash-cycle {
+  0% { opacity: 0; }
+  0.5% { opacity: .16; }
+  6% { opacity: .16; }
+  12%, 100% { opacity: 0; }
+}
+@keyframes bd-slash-cut {
+  0% { transform: scaleX(0); }
+  2.5%, 100% { transform: scaleX(1); }
+}
+
+/* tampon hanko */
+.bd-hanko {
+  right: max(16px, calc(50vw - 380px)); bottom: 28px;
+  font-family: 'Dela Gothic One Koma', var(--display); font-size: 1.35rem; line-height: 1.05;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  color: var(--red); border: 3px solid var(--red); border-radius: 6px; padding: 6px 4px;
+  opacity: .42; transform: rotate(-8deg);
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--red);
+  animation: bd-hanko 9s ease-in-out infinite;
+}
+.bd-hanko i { font-style: normal; display: block; }
+@keyframes bd-hanko { 0%, 100% { opacity: .38; } 50% { opacity: .5; } }
+
+/* mobile : moins d'éléments */
+@media (max-width: 640px) {
+  .bd-petal:nth-of-type(2n), .bd-spark:nth-of-type(2n) { display: none; }
+  .bd-sfx { opacity: .08; }
+  .bd-hanko { bottom: 12px; font-size: 1.1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-petal, .bd-cloud, .bd-slash { display: none; }
+  .bd-sfx { opacity: .1; }
+}

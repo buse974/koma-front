@@ -5,6 +5,8 @@ import App from './App.tsx'
 import './styles/base.css'
 import './styles/game.css'
 import './styles/admin.css'
+import './styles/motion.css'
+import './styles/backdrop.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

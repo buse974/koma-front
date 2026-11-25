@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, Route, Routes } from 'react-router-dom'
+import { Link, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { getToken, setToken } from './api'
 import AdminHome from './pages/AdminHome'
 import AdminLogin from './pages/AdminLogin'
@@ -6,22 +6,29 @@ import AdminPuzzle from './pages/AdminPuzzle'
 import Archive from './pages/Archive'
 import Puzzle from './pages/Puzzle'
 import Today from './pages/Today'
+import MangaBackdrop from './components/MangaBackdrop'
+
+const LANDING_URL: string = import.meta.env.VITE_LANDING_URL || '/'
 
 function Layout() {
+  const { pathname } = useLocation()
   return (
     <>
       <a href="#main" className="skip">Aller au contenu</a>
       <header className="top">
-        <Link to="/" className="logo" aria-label="Koma, accueil">
+        <a href={LANDING_URL} className="logo" aria-label="Koma, accueil">
           <span>K</span>OMA
-        </Link>
+        </a>
         <nav aria-label="Navigation principale">
           <NavLink to="/" end>Jouer</NavLink>
           <NavLink to="/archive">Archives</NavLink>
         </nav>
       </header>
-      <main id="main" className="wrap">
-        <Outlet />
+      <main id="main" className="wrap stage">
+        <MangaBackdrop />
+        <div className="page-in" key={pathname}>
+          <Outlet />
+        </div>
       </main>
       <footer className="foot">Les images appartiennent à leurs auteurs. Retrait sur demande.</footer>
     </>

@@ -4,10 +4,17 @@ import { api, ApiError, type GameState, type Manga, type Stats } from '../api'
 import { formatDate } from '../format'
 import { getPlayerId } from '../player'
 import { loadStats, recordResult, type LocalStats } from '../stats'
-import FrameViewer from './FrameViewer'
+import FrameViewer, { type Fx } from './FrameViewer'
 import GuessInput from './GuessInput'
 import ShareButton from './ShareButton'
 import StatsBlock from './StatsBlock'
+
+const WORDS = {
+  ko: ['ドン!', 'RATÉ!', 'ガーン', 'BZZT!'],
+  skip: ['シュッ', 'ZOOM!', 'SKIP!'],
+  ok: ['ズバッ!', 'BINGO!', 'YES!'],
+} as const
+const pickWord = (k: Fx['kind']) => WORDS[k][Math.floor(Math.random() * WORDS[k].length)]
 
 export default function GameView({ initial }: { initial: GameState }) {
   const [state, setState] = useState(initial)
@@ -18,6 +25,7 @@ export default function GameView({ initial }: { initial: GameState }) {
   const [error, setError] = useState<string | null>(null)
   const [local, setLocal] = useState<LocalStats>(() => (initial.status === 'playing' ? loadStats() : recordResult(initial)))
   const [global, setGlobal] = useState<Stats | null>(null)
+  const [fx, setFx] = useState<Fx | null>(null)
 
   const over = state.status !== 'playing'
 
@@ -39,6 +47,11 @@ export default function GameView({ initial }: { initial: GameState }) {
     try {
       const next = await run()
       setState(next)
+      const last = next.guesses[next.guesses.length - 1]
+      if (last) {
+        const kind: Fx['kind'] = last.correct ? 'ok' : last.type === 'skip' ? 'skip' : 'ko'
+        setFx({ kind, word: pickWord(kind), n: next.guesses.length })
+      }
       // stats locales : une seule fois par puzzle (recordResult est idempotent)
       if (next.status !== 'playing') setLocal(recordResult(next))
       setIndex(Math.max(0, next.frames.length - 1))
@@ -65,7 +78,7 @@ export default function GameView({ initial }: { initial: GameState }) {
         <p className="muted">{formatDate(state.date)}</p>
       </header>
 
-      <FrameViewer frames={state.frames} index={index} onIndex={setIndex} />
+      <FrameViewer frames={state.frames} index={index} onIndex={setIndex} fx={fx} />
 
       {!over && (
         <form
@@ -99,7 +112,7 @@ export default function GameView({ initial }: { initial: GameState }) {
       {state.guesses.length > 0 && (
         <ol className="history" aria-label="Historique des essais">
           {state.guesses.map((g, i) => (
-            <li key={i} className={g.correct ? 'is-ok' : g.type === 'skip' ? 'is-skip' : 'is-ko'}>
+            <li key={i} style={{ animationDelay: `${Math.max(0, i - state.guesses.length + 1) * 60}ms` }} className={g.correct ? 'is-ok' : g.type === 'skip' ? 'is-skip' : 'is-ko'}>
               <span className="mark" aria-hidden="true">
                 {g.correct ? '✓' : g.type === 'skip' ? '–' : '✕'}
               </span>
@@ -112,6 +125,7 @@ export default function GameView({ initial }: { initial: GameState }) {
 
       {over && state.answer && (
         <section className={`end end-${state.status}`} aria-live="polite">
+          <span className="end-burst" aria-hidden="true" />
           <h2 className="display">{state.status === 'won' ? 'Trouvé !' : 'Raté…'}</h2>
           <p className="end-sub">
             {state.status === 'won'

@@ -6,8 +6,8 @@ function Bars({ dist }: { dist: Record<string, number> }) {
   const max = Math.max(1, ...keys.map((k) => dist[k] ?? 0))
   return (
     <ul className="bars">
-      {keys.map((k) => (
-        <li key={k}>
+      {keys.map((k, i) => (
+        <li key={k} style={{ ['--i' as string]: i }}>
           <span className="bar-label">{k === 'lost' ? '✕' : k}</span>
           <span className="bar-track">
             <span className={`bar-fill${k === 'lost' ? ' is-lost' : ''}`} style={{ width: `${Math.max(6, ((dist[k] ?? 0) / max) * 100)}%` }}>
