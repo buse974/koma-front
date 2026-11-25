@@ -116,7 +116,40 @@ export default function GameView({ initial }: { initial: GameState }) {
               <span className="mark" aria-hidden="true">
                 {g.correct ? '✓' : g.type === 'skip' ? '–' : '✕'}
               </span>
-              <span>{g.type === 'skip' ? 'Passé' : g.manga?.title}</span>
+              {g.type === 'skip' || !g.manga ? (
+                <span>Passé</span>
+              ) : (
+                <span className="guess-card">
+                  {g.manga.coverUrl ? (
+                    <img src={g.manga.coverUrl} alt="" loading="lazy" />
+                  ) : (
+                    <span className="guess-nocover" aria-hidden="true" />
+                  )}
+                  <span className="guess-info">
+                    <span className="guess-title">{g.manga.title}</span>
+                    <small>
+                      {[
+                        g.manga.titleEnglish && g.manga.titleEnglish !== g.manga.title ? g.manga.titleEnglish : null,
+                        g.manga.author,
+                        g.manga.year,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </small>
+                  </span>
+                  {g.manga.anilistUrl && (
+                    <a
+                      href={g.manga.anilistUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="guess-link"
+                      aria-label={`Fiche de ${g.manga.title} sur AniList (nouvel onglet)`}
+                    >
+                      Fiche ↗
+                    </a>
+                  )}
+                </span>
+              )}
               <span className="sr-only">{g.correct ? ', bonne réponse' : g.type === 'skip' ? '' : ', raté'}</span>
             </li>
           ))}

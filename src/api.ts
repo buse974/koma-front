@@ -11,7 +11,7 @@ export interface Answer extends Manga {
 }
 export interface Guess {
   type: 'guess' | 'skip'
-  manga?: Manga
+  manga?: Manga & Partial<Pick<Answer, 'author' | 'anilistUrl'>>
   correct: boolean
 }
 export interface PuzzleMeta {
