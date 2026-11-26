@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, ApiError, type GameState, type Manga, type Stats } from '../api'
-import { formatDate } from '../format'
-import { getPlayerId } from '../player'
+import { api, ApiError, assetUrl, MODE_LABEL, type GameState, type Manga, type Stats } from '../api'
 import { loadStats, recordResult, type LocalStats } from '../stats'
+import AnswerInput from './AnswerInput'
 import FrameViewer, { type Fx } from './FrameViewer'
 import GuessInput from './GuessInput'
+import RevealScreen from './RevealScreen'
 import ShareButton from './ShareButton'
 import StatsBlock from './StatsBlock'
 
@@ -16,30 +16,43 @@ const WORDS = {
 } as const
 const pickWord = (k: Fx['kind']) => WORDS[k][Math.floor(Math.random() * WORDS[k].length)]
 
-export default function GameView({ initial }: { initial: GameState }) {
+interface Props {
+  initial: GameState
+  /** identifiant de cette partie (nouveau à chaque ouverture) */
+  sessionId: string
+  /** relance une partie vierge */
+  onReplay: () => void
+  nextId: number | null
+}
+
+export default function GameView({ initial, sessionId, onReplay, nextId }: Props) {
   const [state, setState] = useState(initial)
   const [index, setIndex] = useState(Math.max(0, initial.frames.length - 1))
   const [picked, setPicked] = useState<Manga | null>(null)
+  const [text, setText] = useState('')
   const [inputKey, setInputKey] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [local, setLocal] = useState<LocalStats>(() => (initial.status === 'playing' ? loadStats() : recordResult(initial)))
+  const [local, setLocal] = useState<LocalStats>(loadStats)
   const [global, setGlobal] = useState<Stats | null>(null)
   const [fx, setFx] = useState<Fx | null>(null)
+  const [revealOpen, setRevealOpen] = useState(false)
 
+  const character = state.mode === 'character'
   const over = state.status !== 'playing'
+  const closeReveal = useCallback(() => setRevealOpen(false), [])
 
   useEffect(() => {
     if (!over) return
     let live = true
     api
-      .stats(state.number)
+      .stats(state.id)
       .then((s) => live && setGlobal(s))
       .catch(() => undefined)
     return () => {
       live = false
     }
-  }, [over, state.number])
+  }, [over, state.id])
 
   async function act(run: () => Promise<GameState>) {
     setBusy(true)
@@ -52,10 +65,14 @@ export default function GameView({ initial }: { initial: GameState }) {
         const kind: Fx['kind'] = last.correct ? 'ok' : last.type === 'skip' ? 'skip' : 'ko'
         setFx({ kind, word: pickWord(kind), n: next.guesses.length })
       }
-      // stats locales : une seule fois par puzzle (recordResult est idempotent)
-      if (next.status !== 'playing') setLocal(recordResult(next))
+      if (next.status !== 'playing') {
+        setLocal(recordResult(next))
+        // laisse l'effet de la case se jouer avant la révélation
+        window.setTimeout(() => setRevealOpen(true), last?.correct ? 900 : 500)
+      }
       setIndex(Math.max(0, next.frames.length - 1))
       setPicked(null)
+      setText('')
       setInputKey((k) => k + 1)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Une erreur est survenue.')
@@ -64,10 +81,15 @@ export default function GameView({ initial }: { initial: GameState }) {
     }
   }
 
-  const submit = () => picked && act(() => api.guess(state.number, getPlayerId(), picked.id))
-  const skip = () => act(() => api.skip(state.number, getPlayerId()))
+  const canSubmit = character ? text.trim().length > 0 : !!picked
+  const submit = () => {
+    if (!canSubmit) return
+    void act(() => api.guess(state.id, sessionId, character ? { text: text.trim() } : { mangaId: picked!.id }))
+  }
+  const skip = () => act(() => api.skip(state.id, sessionId))
   const tried = state.guesses.flatMap((g) => (g.manga ? [g.manga.id] : []))
   const attemptsLeft = state.maxAttempts - state.guesses.length
+  const a = state.answer
 
   return (
     <div className="game">
@@ -75,37 +97,52 @@ export default function GameView({ initial }: { initial: GameState }) {
         <h1 className="display">
           Koma <span className="num">#{state.number}</span>
         </h1>
-        <p className="muted">{formatDate(state.date)}</p>
+        <p className="mode-tag">{MODE_LABEL[state.mode]}</p>
       </header>
 
-      <FrameViewer frames={state.frames} index={index} onIndex={setIndex} fx={fx} />
+      <FrameViewer
+        frames={state.frames}
+        index={index}
+        onIndex={setIndex}
+        total={state.frameCount}
+        fx={fx}
+        single={character}
+      />
 
       {!over && (
         <form
           className="guess-form"
           onSubmit={(e) => {
             e.preventDefault()
-            void submit()
+            submit()
           }}
         >
           <p className="attempts" aria-live="polite">
             {attemptsLeft} essai{attemptsLeft > 1 ? 's' : ''} restant{attemptsLeft > 1 ? 's' : ''}
           </p>
-          <GuessInput key={inputKey} value={picked} onChange={setPicked} disabled={busy} excludeIds={tried} />
+          {character ? (
+            <AnswerInput value={text} onChange={setText} disabled={busy} />
+          ) : (
+            <GuessInput key={inputKey} value={picked} onChange={setPicked} disabled={busy} excludeIds={tried} />
+          )}
           {error && (
             <p className="error" role="alert">
               {error}
             </p>
           )}
           <div className="actions">
-            <button type="submit" className="btn btn-ink" disabled={!picked || busy}>
+            <button type="submit" className="btn btn-ink" disabled={!canSubmit || busy}>
               Valider
             </button>
             <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void skip()}>
-              Passer
+              {character ? 'Abandonner' : 'Passer'}
             </button>
           </div>
-          <p className="hint">« Passer » révèle la case suivante mais coûte un essai.</p>
+          <p className="hint">
+            {character
+              ? 'Majuscules, accents et ponctuation ne comptent pas.'
+              : '« Passer » révèle la case suivante mais coûte un essai.'}
+          </p>
         </form>
       )}
 
@@ -116,39 +153,26 @@ export default function GameView({ initial }: { initial: GameState }) {
               <span className="mark" aria-hidden="true">
                 {g.correct ? '✓' : g.type === 'skip' ? '–' : '✕'}
               </span>
-              {g.type === 'skip' || !g.manga ? (
-                <span>Passé</span>
-              ) : (
+              {g.type === 'skip' ? (
+                <span>{character ? 'Abandon' : 'Passé'}</span>
+              ) : g.manga ? (
                 <span className="guess-card">
                   {g.manga.coverUrl ? (
-                    <img src={g.manga.coverUrl} alt="" loading="lazy" />
+                    <img src={assetUrl(g.manga.coverUrl)} alt="" loading="lazy" />
                   ) : (
                     <span className="guess-nocover" aria-hidden="true" />
                   )}
                   <span className="guess-info">
                     <span className="guess-title">{g.manga.title}</span>
                     <small>
-                      {[
-                        g.manga.titleEnglish && g.manga.titleEnglish !== g.manga.title ? g.manga.titleEnglish : null,
-                        g.manga.author,
-                        g.manga.year,
-                      ]
+                      {[g.manga.titleEnglish && g.manga.titleEnglish !== g.manga.title ? g.manga.titleEnglish : null, g.manga.year]
                         .filter(Boolean)
                         .join(' · ')}
                     </small>
                   </span>
-                  {g.manga.anilistUrl && (
-                    <a
-                      href={g.manga.anilistUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="guess-link"
-                      aria-label={`Fiche de ${g.manga.title} sur AniList (nouvel onglet)`}
-                    >
-                      Fiche ↗
-                    </a>
-                  )}
                 </span>
+              ) : (
+                <span className="guess-title">{g.text}</span>
               )}
               <span className="sr-only">{g.correct ? ', bonne réponse' : g.type === 'skip' ? '' : ', raté'}</span>
             </li>
@@ -156,40 +180,36 @@ export default function GameView({ initial }: { initial: GameState }) {
         </ol>
       )}
 
-      {over && state.answer && (
+      {over && a && (
         <section className={`end end-${state.status}`} aria-live="polite">
-          <span className="end-burst" aria-hidden="true" />
           <h2 className="display">{state.status === 'won' ? 'Trouvé !' : 'Raté…'}</h2>
-          <p className="end-sub">
-            {state.status === 'won'
-              ? `En ${state.guesses.length} essai${state.guesses.length > 1 ? 's' : ''}.`
-              : 'Les 6 essais sont épuisés. C’était :'}
-          </p>
-          <div className="answer">
-            {state.answer.coverUrl && <img src={state.answer.coverUrl} alt={`Couverture de ${state.answer.title}`} />}
-            <div>
-              <p className="answer-title">{state.answer.title}</p>
-              {state.answer.titleEnglish && state.answer.titleEnglish !== state.answer.title && (
-                <p className="muted">{state.answer.titleEnglish}</p>
+          <button type="button" className="answer answer-btn" onClick={() => setRevealOpen(true)}>
+            {a.imageUrl && <img src={assetUrl(a.imageUrl)} alt="" />}
+            <span>
+              <span className="answer-title">{a.name ?? a.titleNative ?? a.title}</span>
+              {(a.name ? a.titleNative ?? a.title : a.titleNative && a.title) && (
+                <span className="muted">{a.name ? a.titleNative ?? a.title : a.title}</span>
               )}
-              <p className="muted">
-                {[state.answer.author, state.answer.year].filter(Boolean).join(' · ')}
-              </p>
-              <a href={state.answer.anilistUrl} target="_blank" rel="noreferrer noopener" className="link">
-                Voir sur AniList ↗
-              </a>
-            </div>
-          </div>
+              {a.titleEnglish && <span className="muted">{a.titleEnglish}</span>}
+              <span className="link">Revoir la révélation</span>
+            </span>
+          </button>
           <div className="actions">
+            {nextId && (
+              <Link to={`/p/${nextId}`} className="btn btn-red">
+                Suivant →
+              </Link>
+            )}
+            <button type="button" className="btn btn-ghost" onClick={onReplay}>
+              Rejouer
+            </button>
             <ShareButton state={state} />
-            <Link to="/archive" className="btn btn-ghost">
-              Archives
-            </Link>
           </div>
           <StatsBlock local={local} global={global} />
         </section>
       )}
+
+      {revealOpen && a && <RevealScreen state={state} onClose={closeReveal} onReplay={onReplay} nextId={nextId} />}
     </div>
   )
 }
-

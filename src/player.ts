@@ -28,3 +28,9 @@ export function getPlayerId(): string {
   }
   return (memory = id)
 }
+
+/**
+ * Identifiant d'une partie : un nouveau à chaque ouverture d'un puzzle,
+ * donc quitter un puzzle le remet à zéro (pas de progression conservée).
+ */
+export const newSessionId = (): string => uuid()

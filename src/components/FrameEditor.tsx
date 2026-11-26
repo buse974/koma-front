@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const RATIO = 1.6 // 16:10
 const MAX_W = 1600
 
 interface Rect {
@@ -15,6 +14,8 @@ interface Props {
   /** Reçoit le JPEG final ; doit renvoyer une promesse (upload). */
   onSubmit: (blob: Blob) => Promise<void>
   submitLabel?: string
+  /** largeur / hauteur du cadre (16:10 par défaut) */
+  ratio?: number
 }
 
 /** Dessine le cadre recadré + flous dans un canvas de taille (w,h). */
@@ -46,7 +47,7 @@ function paint(
   }
 }
 
-export default function FrameEditor({ onSubmit, submitLabel = 'Envoyer la case' }: Props) {
+export default function FrameEditor({ onSubmit, submitLabel = 'Envoyer la case', ratio: RATIO = 1.6 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [img, setImg] = useState<HTMLImageElement | null>(null)
   const [zoom, setZoom] = useState(1)
@@ -77,7 +78,7 @@ export default function FrameEditor({ onSubmit, submitLabel = 'Envoyer la case' 
       const y = Math.min(Math.max(c.y - h / 2, 0), img.naturalHeight - h)
       return { x, y, w, h }
     },
-    [img],
+    [img, RATIO],
   )
 
   // Rendu de l'aperçu
@@ -101,7 +102,7 @@ export default function FrameEditor({ onSubmit, submitLabel = 'Envoyer la case' 
       ctx.strokeRect(r.x * w, r.y * h, r.w * w, r.h * h)
     }
     ctx.restore()
-  }, [img, zoom, center, rects, draft, mode, region])
+  }, [img, zoom, center, rects, draft, mode, region, RATIO])
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -208,7 +209,7 @@ export default function FrameEditor({ onSubmit, submitLabel = 'Envoyer la case' 
           </div>
           <p className="hint">
             {mode === 'crop'
-              ? 'Glisse pour déplacer, utilise le curseur pour zoomer (cadre 16:10).'
+              ? `Glisse pour déplacer, utilise le curseur pour zoomer (cadre ${RATIO < 1 ? 'portrait 3:4' : '16:10'}).`
               : 'Dessine un rectangle sur chaque bulle de texte à masquer.'}
           </p>
           <canvas

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { api, type Manga } from '../api'
+import { api, assetUrl, type Manga } from '../api'
 
 interface Props {
   value: Manga | null
@@ -130,7 +130,7 @@ export default function GuessInput({ value, onChange, disabled, label = 'Titre d
                 pick(m)
               }}
             >
-              {m.coverUrl ? <img src={m.coverUrl} alt="" loading="lazy" /> : <span className="combo-nocover" />}
+              {m.coverUrl ? <img src={assetUrl(m.coverUrl)} alt="" loading="lazy" /> : <span className="combo-nocover" />}
               <span>
                 <strong>{m.title}</strong>
                 <small>

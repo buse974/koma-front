@@ -5,6 +5,8 @@ import App from './App.tsx'
 import './styles/base.css'
 import './styles/game.css'
 import './styles/admin.css'
+import './styles/layout.css'
+import './styles/reveal.css'
 import './styles/motion.css'
 import './styles/backdrop.css'
 

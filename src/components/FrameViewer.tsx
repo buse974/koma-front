@@ -15,22 +15,26 @@ interface Props {
   total?: number
   /** effet à jouer sur la case (change de `n` à chaque essai) */
   fx?: Fx | null
+  /** mode personnage : une seule image, en portrait, sans navigation */
+  single?: boolean
 }
 
-export default function FrameViewer({ frames, index, onIndex, total = 6, fx }: Props) {
+export default function FrameViewer({ frames, index, onIndex, total = 6, fx, single = false }: Props) {
   const [loaded, setLoaded] = useState<string | null>(null)
   const src = frames[index] ? assetUrl(frames[index]) : null
   return (
-    <section className="viewer" aria-label="Cases du manga">
-      <div key={fx?.n ?? 0} className={`panel${fx ? ` fx-${fx.kind}` : ''}`}>
-        <span className="panel-no" aria-hidden="true">
-          {index + 1}
-        </span>
+    <section className="viewer" aria-label={single ? 'Personnage à deviner' : 'Cases du manga'}>
+      <div key={fx?.n ?? 0} className={`panel${single ? ' panel-single' : ''}${fx ? ` fx-${fx.kind}` : ''}`}>
+        {!single && (
+          <span className="panel-no" aria-hidden="true">
+            {index + 1}
+          </span>
+        )}
         {src && (
           <img
             key={src}
             src={src}
-            alt={`Case ${index + 1} sur ${total}, bulles de texte floutées`}
+            alt={single ? 'Personnage à deviner' : `Case ${index + 1} sur ${total}, bulles de texte floutées`}
             className={loaded === src ? 'is-in' : ''}
             onLoad={() => setLoaded(src)}
             draggable={false}
@@ -43,6 +47,7 @@ export default function FrameViewer({ frames, index, onIndex, total = 6, fx }: P
           </span>
         )}
       </div>
+      {!single && total > 1 && (
       <div className="dots" role="group" aria-label="Choisir une case">
         {Array.from({ length: total }, (_, i) => {
           const open = i < frames.length
@@ -62,6 +67,7 @@ export default function FrameViewer({ frames, index, onIndex, total = 6, fx }: P
           )
         })}
       </div>
+      )}
     </section>
   )
 }

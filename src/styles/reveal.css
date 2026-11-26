@@ -1,0 +1,75 @@
+/* ---------- Écran de révélation ---------- */
+.reveal {
+  position: fixed; inset: 0; z-index: 80; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--ink); color: var(--paper);
+  display: flex; align-items: flex-start; justify-content: center;
+  animation: reveal-in .35s ease-out both;
+}
+@keyframes reveal-in { from { opacity: 0; } }
+
+/* lignes de vitesse qui tournent lentement */
+.reveal-lines {
+  position: fixed; inset: -50%; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(246, 240, 225, .09) 0 1.4deg, transparent 1.4deg 6deg);
+  -webkit-mask: radial-gradient(circle, transparent 14%, #000 48%);
+  mask: radial-gradient(circle, transparent 14%, #000 48%);
+  animation: burst-spin 60s linear infinite;
+}
+.reveal-won .reveal-lines { background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 210, 63, .14) 0 1.4deg, transparent 1.4deg 6deg); }
+.reveal-lost .reveal-lines { background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(230, 57, 70, .14) 0 1.4deg, transparent 1.4deg 6deg); }
+
+.reveal-inner {
+  position: relative; width: 100%; max-width: 760px; padding: 28px 16px 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+}
+
+.reveal-stamp {
+  font-size: clamp(2.2rem, 9vw, 3.6rem); padding: 2px 18px; transform: rotate(-3deg);
+  color: var(--ink); background: #ffd23f; border: 4px solid var(--paper); box-shadow: 6px 6px 0 var(--red);
+  animation: stamp .55s .1s cubic-bezier(.2, 1.7, .4, 1) both;
+}
+.reveal-lost .reveal-stamp { background: var(--red); box-shadow: 6px 6px 0 var(--paper); }
+.reveal-score { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: .85rem; opacity: .85; }
+
+/* grande image, encadrée comme une case */
+.reveal-figure {
+  margin: 6px 0 4px; width: 100%; max-width: 620px;
+  border: 6px solid var(--paper); box-shadow: 10px 10px 0 var(--red), 0 0 0 3px var(--ink);
+  background: var(--paper-2); transform: rotate(-1deg);
+  animation: reveal-slam .7s .2s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+.reveal-won .reveal-figure { box-shadow: 10px 10px 0 #ffd23f, 0 0 0 3px var(--ink); }
+.reveal-figure img { display: block; width: 100%; max-height: min(50vh, 560px); object-fit: contain; background: var(--ink); }
+.reveal-noimg { aspect-ratio: 16 / 10; display: grid; place-items: center; font-family: var(--display); font-size: 6rem; color: var(--ink-2); }
+@keyframes reveal-slam {
+  0% { opacity: 0; transform: scale(1.35) rotate(4deg); filter: contrast(2) grayscale(1); }
+  60% { opacity: 1; transform: scale(.97) rotate(-1.5deg); }
+  100% { opacity: 1; transform: rotate(-1deg); filter: none; }
+}
+
+.reveal-titles { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: fade-up .45s .55s ease-out both; }
+.reveal-name {
+  font-size: clamp(2.4rem, 10vw, 4.4rem); color: #ffd23f; letter-spacing: .03em;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 4px 4px 0 var(--red);
+}
+.reveal-jp {
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif; font-weight: 900;
+  font-size: clamp(1.9rem, 7.5vw, 3.2rem); line-height: 1.15; letter-spacing: .02em; color: var(--paper);
+  text-shadow: 3px 3px 0 var(--red);
+}
+.reveal-name + .reveal-jp { font-size: clamp(1.4rem, 5vw, 2.1rem); text-shadow: 2px 2px 0 var(--red); }
+.reveal-romaji { font-weight: 600; opacity: .8; }
+.reveal-en {
+  font-family: var(--display); font-size: clamp(1.4rem, 5vw, 2rem); letter-spacing: .06em;
+  background: var(--paper); color: var(--ink); padding: 2px 14px; transform: rotate(1deg); box-shadow: 4px 4px 0 var(--red);
+}
+.reveal-meta { font-size: .9rem; opacity: .75; margin-top: 4px; }
+.reveal-link { color: #ffd23f; font-weight: 700; text-underline-offset: 3px; }
+
+.reveal-actions {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%; max-width: 620px; margin-top: 10px;
+  animation: fade-up .45s .7s ease-out both;
+}
+.reveal-actions .btn { flex: 1 1 140px; border-color: var(--paper); box-shadow: 4px 4px 0 var(--paper); }
+.reveal-actions .btn-ink { background: var(--ink); color: var(--paper); }
+.reveal :focus-visible { outline-color: var(--paper); }
