@@ -2,7 +2,7 @@
    Toutes coupées par prefers-reduced-motion (base.css). */
 
 /* ---------- Pages ---------- */
-.page-in { animation: page-in 0.38s cubic-bezier(.2, .9, .3, 1.2) both; }
+.page-in { animation: page-in 0.38s cubic-bezier(.2, .9, .3, 1.2) backwards; }
 @keyframes page-in {
   from { opacity: 0; transform: translateY(14px) rotate(-0.6deg); clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); }
   60% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
@@ -201,4 +201,4 @@
 @keyframes float { 50% { transform: translateY(-8px) rotate(1deg); } }
 .toast:not(:empty) { animation: toast-in .3s cubic-bezier(.2, 1.5, .4, 1) both; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 20px) scale(.8); } }
-.card { animation: fade-up .35s ease-out both; }
+.card { animation: fade-up .35s ease-out backwards; }
